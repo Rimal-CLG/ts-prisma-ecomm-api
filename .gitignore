@@ -1,0 +1,12 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+# IDE specific files 
+.vscode
+
+/src/generated/prisma
+leet.js
+notes.txt
+
+ts-prisma-ecommerce-api
