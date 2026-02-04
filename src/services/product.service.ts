@@ -125,29 +125,35 @@ export const deleteProductService = async (productId: number) => {
 };
 
 export const addProductsService = async () => {
-  const fetchResponse = await axios("https://dummyjson.com/products");
-  const products = fetchResponse.data["products"];
-  console.log("Fetched Products Count: ", products.length);
-  const addedProducts = [];
+  const fetchResponse = await axios.get("https://dummyjson.com/products");
+  const products = fetchResponse.data.products;
 
-  for (const item of products) {
-    const addProduct = await prisma.product.upsert({
-      where: { apiId: item.id },
-      update: {
-        name: item.title,
-        description: item.description,
-        price: item.price * 92,
-        stock: item.stock,
-      },
-      create: {
-        apiId: item.id,
-        name: item.title,
-        description: item.description,
-        price: item.price * 92,
-        stock: item.stock,
-      },
-    });
-    addedProducts.push(addProduct);
-  }
-  return addedProducts;
+  type DummyProduct = {
+    id: number;
+    title: string;
+    description: string;
+    price: number;
+    stock: number;
+  };
+
+  await Promise.all(
+    products.map((prod: DummyProduct) => {
+      return prisma.product.upsert({
+        where: { apiId: prod.id },
+        update: {
+          name: prod.title,
+          description: prod.description,
+          price: prod.price * 92,
+          stock: prod.stock,
+        },
+        create: {
+          apiId: prod.id,
+          name: prod.title,
+          description: prod.description,
+          price: prod.price * 92,
+          stock: prod.stock,
+        },
+      });
+    }),
+  );
 };

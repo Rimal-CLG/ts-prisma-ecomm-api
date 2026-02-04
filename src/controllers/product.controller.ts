@@ -75,6 +75,7 @@ export const deleteProductByID = async (req: Request, res: Response) => {
 export const addProducts = async (req: Request, res: Response) => {
   try {
     const result = await addProductsService();
+    return res.status(201).json(result);
   } catch (err: any) {
     return res.status(500).json({ Message: err.message });
   }
