@@ -1,1 +1,0 @@
-# ts-prisma-ecommerce-api
