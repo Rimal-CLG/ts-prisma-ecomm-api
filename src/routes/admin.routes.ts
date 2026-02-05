@@ -11,11 +11,19 @@ import { authenticater } from "../middlewares/auth.middleware.ts";
 import { isAdmin } from "../middlewares/isAdmin.middleware.ts";
 
 import express from "express";
+import { validate } from "../middlewares/validate.middleware.ts";
+import { loginSchema, registerSchema } from "../dtos/auth.dto.ts";
 const router = express.Router();
 
 // POST
-router.post("/register", authenticater, isAdmin, adminRegister);
-router.post("/login", adminLogin);
+router.post(
+  "/register",
+  authenticater,
+  isAdmin,
+  validate(registerSchema),
+  adminRegister,
+);
+router.post("/login", validate(loginSchema), adminLogin);
 
 // GET
 router.get("/viewUserProfile/:id", authenticater, isAdmin, viewUProfile);

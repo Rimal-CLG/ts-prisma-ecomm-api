@@ -1,3 +1,4 @@
+import type { LoginDTO, RegisterDTO, UpdateDTO } from "../dtos/auth.dto.ts";
 import {
   deleteUserProfile,
   loginAdmin,
@@ -13,27 +14,18 @@ import type { Request, Response } from "express";
 
 export const adminRegister = async (req: Request, res: Response) => {
   try {
-    const { name, username, email, password, confirmPassword } = req.body;
-
-    const admin = await registerAdmin({
-      name,
-      username,
-      email,
-      password,
-      confirmPassword,
-      role: "ADMIN",
-    });
-
+    const data: RegisterDTO = req.body;
+    const admin = await registerAdmin(data);
     res.status(201).json(admin);
   } catch (err: any) {
-    return res.status(500).json({ Message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
 export const adminLogin = async (req: Request, res: Response) => {
   try {
-    const { username, password } = req.body;
-    const token = await loginAdmin({ username, password });
+    const data: LoginDTO = req.body;
+    const token = await loginAdmin(data);
     return res.status(200).json({ token });
   } catch (err: any) {
     return res.status(500).json({ message: err.message });
@@ -56,7 +48,7 @@ export const deleteUProfile = async (req: Request, res: Response) => {
     const result = await deleteUserProfile(userId);
     return res.status(200).json(result);
   } catch (err: any) {
-    return res.status(500).json({ Message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
@@ -66,7 +58,7 @@ export const viewAllU = async (req: Request, res: Response) => {
     const users = await viewAllUsers(data);
     return res.status(200).json(users);
   } catch (err: any) {
-    return res.status(500).json({ Message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
@@ -76,14 +68,15 @@ export const viewAllA = async (req: Request, res: Response) => {
     const admins = await viewAllAdmins(data);
     return res.status(200).json(admins);
   } catch (err: any) {
-    return res.status(500).json({ Message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
 export const updateProfile = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.params.id);
-    const userDetails = await updateAdminProfile(userId, req.body);
+    const data: UpdateDTO = req.body;
+    const userDetails = await updateAdminProfile(userId, data);
     return res.status(200).json({ user: userDetails });
   } catch (err: any) {
     return res.status(500).json({ message: err.message });

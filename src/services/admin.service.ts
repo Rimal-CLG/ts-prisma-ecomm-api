@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 import type { PaginationRTN } from "../utils/pagination.ts";
+import type { LoginDTO, RegisterDTO, UpdateDTO } from "../dtos/auth.dto.ts";
 
 if (!process.env.JWT_SECRET) {
   throw new Error("JWT_SECRET is not defined in .env");
@@ -11,54 +12,18 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN: jwt.SignOptions["expiresIn"] =
   (process.env.JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"]) || "15m";
 
-interface RegisterAdminInput {
-  name: string;
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  role: "ADMIN";
-}
+export const registerAdmin = async (data: RegisterDTO) => {
+  const [emailUser, usernameUser] = await Promise.all([
+    prisma.user.findUnique({ where: { email: data.email } }),
+    prisma.user.findUnique({ where: { username: data.username } }),
+  ]);
 
-export const registerAdmin = async (data: RegisterAdminInput) => {
-  const regex =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-
-  if (
-    !data.name ||
-    !data.username ||
-    !data.email ||
-    !data.password ||
-    !data.confirmPassword ||
-    !data.role
-  ) {
-    throw new Error("All fields are required");
+  if (emailUser) {
+    throw new Error("Email already exists");
   }
 
-  const existingUser = await prisma.user.findFirst({
-    where: {
-      OR: [{ email: data.email }, { username: data.username }],
-    },
-  });
-
-  if (existingUser) {
-    if (existingUser.email === data.email) {
-      throw new Error("Email already exists");
-    }
-    if (existingUser.username === data.username) {
-      throw new Error("Username already exists");
-    }
-    throw new Error("User already exists");
-  }
-
-  if (!regex.test(data.password)) {
-    throw new Error(
-      "Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.",
-    );
-  }
-
-  if (data.password !== data.confirmPassword) {
-    throw new Error("Passwords and confirmPassword are not match");
+  if (usernameUser) {
+    throw new Error("Username already exists");
   }
 
   const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -68,41 +33,31 @@ export const registerAdmin = async (data: RegisterAdminInput) => {
       username: data.username,
       email: data.email,
       password: hashedPassword,
-      role: data.role,
+      role: "ADMIN",
     },
   });
 
   return user;
 };
 
-interface LoginAdminInput {
-  username: string;
-  password: string;
-}
-export const loginAdmin = async (data: LoginAdminInput) => {
+export const loginAdmin = async (data: LoginDTO) => {
   const user = await prisma.user.findUnique({
     where: { username: data.username },
   });
   if (!user) {
-    throw new Error("Invalid Username");
+    throw new Error("Invalid credentials");
   }
 
   const isPasswordValid = await bcrypt.compare(data.password, user.password);
   if (!isPasswordValid) {
-    throw new Error("Invalid password");
+    throw new Error("Invalid credentials");
   }
 
   const token = jwt.sign(
     { id: user.id, username: user.username, role: user.role },
     JWT_SECRET,
-    {
-      expiresIn: JWT_EXPIRES_IN,
-    },
+    { expiresIn: JWT_EXPIRES_IN },
   );
-
-  if (!token) {
-    throw new Error("Token generation failed");
-  }
 
   return token;
 };
@@ -178,68 +133,33 @@ export const viewAllAdmins = async (data: PaginationRTN) => {
   return admins;
 };
 
-interface UpdateAdminInput {
-  name?: string;
-  username?: string;
-  email?: string;
-  password?: string;
-}
+export const updateAdminProfile = async (userId: number, data: UpdateDTO) => {
+  let updateData = await prisma.user.findFirst({ where: { id: userId } });
 
-export const updateAdminProfile = async (
-  userId: number,
-  data: UpdateAdminInput,
-) => {
-  const updateData: any = {};
-
+  if(!updateData) {
+    throw new Error("User not found");
+  }
+  
   if (data.name) {
     updateData.name = data.name;
   }
-  if (data.username) {
-    updateData.username = data.username;
-  }
-  if (data.email) {
-    updateData.email = data.email;
-  }
 
   if (data.password) {
-    const regex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-
-    if (!regex.test(data.password)) {
-      throw new Error("Password is not strong enough");
-    }
-
     updateData.password = await bcrypt.hash(data.password, 10);
   }
 
-  if (Object.keys(updateData).length === 0) {
-    throw new Error("Nothing to update");
+  if (data.email) {
+    const emailUser = await prisma.user.findFirst({
+      where: { email: data.email, id: { not: userId } },
+    });
+    if (emailUser) throw new Error("Email already exists");
   }
 
-  if (data.email || data.username) {
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        AND: [
-          { id: { not: userId } },
-          {
-            OR: [
-              data.email ? { email: data.email } : undefined,
-              data.username ? { username: data.username } : undefined,
-            ].filter(Boolean) as any,
-          },
-        ],
-      },
+  if (data.username) {
+    const usernameUser = await prisma.user.findFirst({
+      where: { username: data.username, id: { not: userId } },
     });
-
-    if (existingUser) {
-      if (existingUser.email === data.email) {
-        throw new Error("Email already exists");
-      }
-      if (existingUser.username === data.username) {
-        throw new Error("Username already exists");
-      }
-      throw new Error("Email or username already exists");
-    }
+    if (usernameUser) throw new Error("Username already exists");
   }
 
   const updatedUser = await prisma.user.update({
