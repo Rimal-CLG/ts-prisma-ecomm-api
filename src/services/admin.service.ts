@@ -136,10 +136,10 @@ export const viewAllAdmins = async (data: PaginationRTN) => {
 export const updateAdminProfile = async (userId: number, data: UpdateDTO) => {
   let updateData = await prisma.user.findFirst({ where: { id: userId } });
 
-  if(!updateData) {
+  if (!updateData) {
     throw new Error("User not found");
   }
-  
+
   if (data.name) {
     updateData.name = data.name;
   }
@@ -160,6 +160,7 @@ export const updateAdminProfile = async (userId: number, data: UpdateDTO) => {
       where: { username: data.username, id: { not: userId } },
     });
     if (usernameUser) throw new Error("Username already exists");
+    updateData.username = data.username;
   }
 
   const updatedUser = await prisma.user.update({
