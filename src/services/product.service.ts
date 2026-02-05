@@ -1,6 +1,7 @@
 import prisma from "../config/db.ts";
 import axios from "axios";
 import type { PaginationRTN } from "../utils/pagination.ts";
+import type { AddProductDTO, UpdateProductDTO } from "../dtos/product.dto.ts";
 
 export const viewAllProduct = async (data: PaginationRTN) => {
   const product = await prisma.product.findMany({
@@ -21,27 +22,7 @@ export const viewProductByIdService = async (productId: number) => {
   return product;
 };
 
-interface AddProduct {
-  name: string;
-  description?: string;
-  price: number;
-  stock: number;
-  isActive?: boolean;
-}
-
-export const addProductService = async (data: AddProduct) => {
-  if (!data.name || data.price === undefined || data.stock === undefined) {
-    throw new Error("All Field Are Require");
-  }
-
-  if (data.price <= 0) {
-    throw new Error("Price must be greater than 0");
-  }
-
-  if (data.stock < 0) {
-    throw new Error("Stock cannot be negative");
-  }
-
+export const addProductService = async (data: AddProductDTO) => {
   const newData: any = {
     name: data.name,
     price: data.price,
@@ -63,38 +44,16 @@ export const addProductService = async (data: AddProduct) => {
   return product;
 };
 
-interface UpdateProduct {
-  name?: string;
-  description?: string;
-  price?: number;
-  stock?: number;
-  isActive?: boolean;
-}
-
 export const updateProductService = async (
   productId: number,
-  data: UpdateProduct,
+  data: UpdateProductDTO,
 ) => {
   const updateData: any = {};
 
-  if (data.name) {
-    updateData.name = data.name;
-  }
-  if (data.description) {
-    updateData.description = data.description;
-  }
-  if (data.price) {
-    updateData.price = data.price;
-  }
-  if (data.stock) {
-    updateData.stock = data.stock;
-  }
-  if (data.isActive) {
-    updateData.isActive = data.isActive;
-  }
-
-  if (Object.keys(updateData).length === 0) {
-    throw new Error("Nothing to update");
+  for (const key in data) {
+    if (data[key as keyof UpdateProductDTO] !== undefined) {
+      updateData[key] = data[key as keyof UpdateProductDTO];
+    }
   }
 
   const updatedProduct = await prisma.product.update({

@@ -1,3 +1,4 @@
+import type { AddProductDTO, UpdateProductDTO } from "../dtos/product.dto.ts";
 import {
   addProductService,
   updateProductService,
@@ -32,14 +33,8 @@ export const viewProductById = async (req: Request, res: Response) => {
 
 export const addProduct = async (req: Request, res: Response) => {
   try {
-    const { id, name, description, price, stock, isActive } = req.body;
-    const product = await addProductService({
-      name,
-      description,
-      price,
-      stock,
-      isActive,
-    });
+    const data: AddProductDTO = req.body;
+    const product = await addProductService(data);
     return res.status(201).json(product);
   } catch (err: any) {
     return res.status(500).json({ Message: err.message });
@@ -52,7 +47,8 @@ export const updateProductByID = async (req: Request, res: Response) => {
     if (!productId) {
       throw new Error("ProductId not defined");
     }
-    const product = await updateProductService(productId, req.body);
+    const data:UpdateProductDTO = req.body;
+    const product = await updateProductService(productId, data);
     return res.status(201).json(product);
   } catch (err: any) {
     return res.status(500).json({ Message: err.message });
