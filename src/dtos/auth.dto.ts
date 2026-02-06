@@ -13,13 +13,7 @@ export const registerSchema = z
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
         "Password must include at least one uppercase letter, one lowercase letter, one number, and one special character.",
       ),
-    confirmPassword: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Password must include at least one uppercase letter, one lowercase letter, one number, and one special character.",
-      ),
+    confirmPassword: z.string().min(1, "Confirm Password must be required"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
